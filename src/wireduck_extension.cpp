@@ -483,7 +483,6 @@ void WireduckExtension::Load(ExtensionLoader &loader) {
     }
     std::cout << "[WireDuck] TShark detected. Loading extension..." << std::endl;
 
-    auto &catalog = Catalog::GetSystemCatalog(*db.instance);
     Connection conn(*db.instance);
 
     // Check if glossary tables exist
