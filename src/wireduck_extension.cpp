@@ -5,7 +5,6 @@
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/function/scalar_function.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include "duckdb/common/file_system.hpp"
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 // OpenSSL linked through vcpkg
@@ -483,7 +482,8 @@ void WireduckExtension::Load(ExtensionLoader &loader) {
     }
     std::cout << "[WireDuck] TShark detected. Loading extension..." << std::endl;
 
-    Connection conn(*db.instance);
+    
+    Connection conn(loader.GetDatabaseInstance());
 
     // Check if glossary tables exist
     auto protocol_check = conn.Query("SELECT name FROM sqlite_master WHERE type='table' AND name='glossary_protocols'");
