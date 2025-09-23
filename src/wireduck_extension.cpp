@@ -5,7 +5,6 @@
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/function/scalar_function.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include "duckdb/common/file_system.hpp"
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 // OpenSSL linked through vcpkg
@@ -449,7 +448,7 @@ static void InitializeGlossaryProcedure(ClientContext &context, TableFunctionInp
 	bind_data.finished = true;
 }
 
-static void LoadInternal(DatabaseInstance &instance) {
+static void LoadInternal(ExtensionLoader &loader) {
 
     // scalar function to validate tshark
     auto check_tshark_func=ScalarFunction (
@@ -458,7 +457,7 @@ static void LoadInternal(DatabaseInstance &instance) {
         LogicalType::BOOLEAN,                                 // return type
         CheckTsharkFunction                                   // function pointer
     );
-    ExtensionUtil::RegisterFunction(instance, check_tshark_func);
+    loader.RegisterFunction(check_tshark_func);
 
 
     auto read_pcap_selected = TableFunction("read_pcap",
@@ -467,13 +466,13 @@ static void LoadInternal(DatabaseInstance &instance) {
         read_pcap_selected.named_parameters["climit"] = LogicalType::BIGINT;
         read_pcap_selected.named_parameters["cfilter"] = LogicalType::VARCHAR;
 
-    ExtensionUtil::RegisterFunction(instance, read_pcap_selected);
+    loader.RegisterFunction(read_pcap_selected);
     
     auto initialize_glossary =TableFunction ("initialize_glossary", {}, InitializeGlossaryProcedure, InitializeGlossaryBind);
-    ExtensionUtil::RegisterFunction(instance, initialize_glossary);
+    loader.RegisterFunction(initialize_glossary);
 
 }
-void WireduckExtension::Load(DuckDB &db) {
+void WireduckExtension::Load(ExtensionLoader &loader) {
     if (!CheckTSharkAvailable()) {
         std::cerr << "[WireDuck] ERROR: TShark is not installed or not accesible."<< std::endl;
         std::cerr << "[WireDuck] Please install TShark before using this extension."<< std::endl;
@@ -483,8 +482,8 @@ void WireduckExtension::Load(DuckDB &db) {
     }
     std::cout << "[WireDuck] TShark detected. Loading extension..." << std::endl;
 
-    auto &catalog = Catalog::GetSystemCatalog(*db.instance);
-    Connection conn(*db.instance);
+    
+    Connection conn(loader.GetDatabaseInstance());
 
     // Check if glossary tables exist
     auto protocol_check = conn.Query("SELECT name FROM sqlite_master WHERE type='table' AND name='glossary_protocols'");
@@ -499,7 +498,7 @@ void WireduckExtension::Load(DuckDB &db) {
         std::cerr << "[WireDuck] glossary already initialized." << std::endl;
     }
    
-	LoadInternal(*db.instance);
+	LoadInternal(loader);
     
 }
 std::string WireduckExtension::Name() {
@@ -518,16 +517,9 @@ std::string WireduckExtension::Version() const {
 
 extern "C" {
 
-DUCKDB_EXTENSION_API void wireduck_init(duckdb::DatabaseInstance &db) {
-    duckdb::DuckDB db_wrapper(db);
-    db_wrapper.LoadExtension<duckdb::WireduckExtension>();
-}
-
-DUCKDB_EXTENSION_API const char *wireduck_version() {
-	return duckdb::DuckDB::LibraryVersion();
+DUCKDB_CPP_EXTENSION_ENTRY(wireduck, loader) {
+	duckdb::LoadInternal(loader);
 }
 }
 
-#ifndef DUCKDB_EXTENSION_MAIN
-#error DUCKDB_EXTENSION_MAIN not defined
-#endif
+
