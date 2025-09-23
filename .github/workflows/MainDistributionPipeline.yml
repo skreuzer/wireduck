@@ -16,7 +16,7 @@ jobs:
     name: Build extension binaries
     uses: duckdb/extension-ci-tools/.github/workflows/_extension_distribution.yml@main
     with:
-      duckdb_version: v1.4-andium
+      duckdb_version: v1.4.0
       ci_tools_version: main
       extension_name: wireduck
       exclude_archs: osx_amd64;osx_arm64;windows_amd64;wasm
@@ -24,9 +24,9 @@ jobs:
 
   duckdb-stable-build:
     name: Build extension binaries
-    uses: duckdb/extension-ci-tools/.github/workflows/_extension_distribution.yml@v1.3.2
+    uses: duckdb/extension-ci-tools/.github/workflows/_extension_distribution.yml@v1.4.0
     with:
-      duckdb_version: v1.3.2
-      ci_tools_version: v1.3.2
+      duckdb_version: v1.4.0
+      ci_tools_version: v1.4.0
       extension_name: wireduck
       exclude_archs: osx_amd64;osx_arm64;windows_amd64;wasm
